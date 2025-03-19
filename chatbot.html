@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Health Chatbot</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f4f4f4;
+        }
+
+        .chat-container {
+            width: 90%;
+            max-width: 400px;
+            background: white;
+            padding: 20px;
+            box-shadow: 0px 0px 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h2 {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+
+        .chat-box {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            padding: 10px;
+            margin-bottom: 10px;
+            background: #f9f9f9;
+        }
+
+        .bot-message, .user-message {
+            padding: 10px;
+            border-radius: 5px;
+            margin: 5px 0;
+            max-width: 80%;
+            word-wrap: break-word;
+        }
+
+        .bot-message {
+            background: #e1e1e1;
+            align-self: flex-start;
+        }
+
+        .user-message {
+            background: #007bff;
+            color: white;
+            align-self: flex-end;
+        }
+
+        .typing-indicator {
+            font-style: italic;
+            color: #888;
+            margin: 5px 0;
+            display: none;
+        }
+
+        .input-container {
+            display: flex;
+            gap: 10px;
+        }
+
+        input {
+            flex: 1;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            outline: none;
+        }
+
+        button {
+            padding: 10px 20px;
+            border: none;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="chat-container">
+        <h2>Health Chatbot</h2>
+        <div class="chat-box" id="chat-box"></div>
+        <div class="typing-indicator" id="typing-indicator">Bot is typing...</div>
+        <div class="input-container">
+            <input type="text" id="user-input" placeholder="Type here..." onkeypress="handleKeyPress(event)">
+            <button onclick="sendMessage()">Send</button>
+        </div>
+    </div>
+
+    <script>
+        let chatStage = 0; // Tracks conversation progress
+        let userName = ""; // Stores user's name
+        let userSymptom = ""; // Stores the symptom mentioned by the user
+
+        document.addEventListener("DOMContentLoaded", function () {
+            addMessage("bot", "Hello! What's your name?");
+        });
+
+        function sendMessage() {
+            let userInput = document.getElementById("user-input").value.trim();
+            let chatBox = document.getElementById("chat-box");
+
+            if (userInput === "") return;
+
+            addMessage("user", userInput);
+            document.getElementById("user-input").value = "";
+
+            showTypingIndicator();
+            setTimeout(() => {
+                hideTypingIndicator();
+                handleChatFlow(userInput);
+                chatBox.scrollTop = chatBox.scrollHeight;
+            }, 1000);
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === "Enter") {
+                sendMessage();
+            }
+        }
+
+        function handleChatFlow(input) {
+            let botResponse = "";
+
+            if (chatStage === 0) {
+                userName = capitalizeFirstLetter(input);
+                botResponse = `Nice to meet you, ${userName}! How can I assist you today?`;
+                chatStage = 1;
+            } else if (chatStage === 1) {
+                botResponse = "I see. Can you describe your symptoms in more detail?";
+                chatStage = 2;
+            } else if (chatStage === 2) {
+                userSymptom = input.toLowerCase();
+                botResponse = getHealthAdvice(userSymptom);
+                chatStage = 3;
+            } else {
+                botResponse = "Do you have any other symptoms or health concerns?";
+            }
+
+            addMessage("bot", botResponse);
+        }
+
+        function getHealthAdvice(symptom) {
+            let responses = {
+                "fever": "You may have an infection. Stay hydrated and get rest. If it persists, consult a doctor.",
+                "cough": "Try warm tea with honey and rest your voice. If it lasts over 2 weeks, see a doctor.",
+                "headache": "Reduce screen time, drink water, and get enough sleep. Stress and dehydration can cause headaches.",
+                "cold": "Drink warm fluids, inhale steam, and get rest. A cold usually clears in a few days.",
+                "stomach pain": "Avoid oily foods, drink warm water, and try a light diet. If the pain is severe, consult a doctor.",
+                "diarrhea": "Stay hydrated with ORS. Avoid spicy food. If symptoms persist, see a doctor.",
+                "vomiting": "Drink small sips of water and rest. If vomiting continues, consult a doctor.",
+                "sore throat": "Gargle with warm salt water, drink warm fluids, and rest your voice.",
+                "back pain": "Try stretching, use a hot compress, and avoid heavy lifting. If pain persists, consult a doctor.",
+                "dizziness": "Sit down, drink water, and rest. If frequent, check your blood pressure.",
+                "fatigue": "Ensure enough sleep, stay hydrated, and eat nutritious food. If persistent, get a health check-up.",
+                "chest pain": "If mild, rest and monitor. If severe or radiating to the arm/jaw, seek emergency medical attention.",
+                "insomnia": "Avoid screens before bed, try relaxation techniques, and maintain a sleep routine.",
+                "joint pain": "Apply a warm compress, do gentle stretching, and take pain relief if necessary."
+            };
+
+            for (let key in responses) {
+                if (symptom.includes(key)) {
+                    return responses[key] + ` Let me know if you need more details, ${userName}.`;
+                }
+            }
+
+            return "I'm not sure about that. Can you describe your symptoms more clearly?";
+        }
+
+        function addMessage(sender, text) {
+            let chatBox = document.getElementById("chat-box");
+            let message = document.createElement("div");
+            message.className = sender === "bot" ? "bot-message" : "user-message";
+            message.innerText = text;
+            chatBox.appendChild(message);
+        }
+
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+        function showTypingIndicator() {
+            document.getElementById("typing-indicator").style.display = "block";
+        }
+
+        function hideTypingIndicator() {
+            document.getElementById("typing-indicator").style.display = "none";
+        }
+    </script>
+</body>
+</html>
